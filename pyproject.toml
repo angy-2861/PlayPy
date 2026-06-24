@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PlayPy"
+version = "0.5.0"
+description = "PlayPy is a lightweight Python library for creating games, tools, and interactive applications using a retained-mode UI and scene system built on top of pygame. It focuses on rapid prototyping, composable rendering, and simple but powerful layout primitives."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = ["pygame-ce>=2.5.6", "colorama>=0.4.6"]
+authors = [{name = "angel", email = "angyv2861@gmail.com"}]
+license = { file = "LICENSE" }
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"playpy.data" = ["default_icon.ppm", "fonts/*"]
