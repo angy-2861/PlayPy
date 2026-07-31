@@ -91,7 +91,7 @@ easing_functions: dict[TweenEasingFunction, Callable[[float], float]] = {
     "cubic": lambda x: x**3,
     "quadratic": lambda x: x**2,
     "exponential": lambda x: 0 if x <= 0 else 2 ** (10 * (x - 1)),
-    "back": lambda x: 2 * x**2 - x,
+    "back": lambda x: 3*x**3-2*x**2,
     "bounce": bounce,
 }
 easing_styles: dict[TweenEasingStyle, Callable[[Callable[[float], float]], Callable[[float], float]]] = {

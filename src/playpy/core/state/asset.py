@@ -73,6 +73,9 @@ class Animation:
         self.loop = loop
         self.time = 0.0
 
+        self.playing: bool = False
+        self.stopped: bool = False
+
     @property
     def current_frame(self) -> Sprite:
         index = int(self.time * self.fps)
@@ -88,11 +91,30 @@ class Animation:
     def duration(self) -> float:
         return len(self.frames) / self.fps
 
+    def play(self):
+        self.playing = True
+
+    def pause(self):
+        self.playing = False
+
+    def start(self):
+        self.time = 0
+        self.playing = True
+        self.stopped = False
+
+    def stop(self):
+        self.playing = False
+        self.stopped = True
+
     def update(self, dt: float):
+        if not self.playing or self.stopped: return
         self.time += dt
 
         if self.loop:
             self.time %= self.duration
+        elif self.time >= self.duration:
+            self.time = self.duration
+            self.stop()
 
     def load(self) -> list[pg.Surface]:
         full: list[pg.Surface] = []

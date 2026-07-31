@@ -70,6 +70,9 @@ class FRect:
         self._w = w
         self._h = h
 
+    def __str__(self) -> str:
+        return f"{{({self.x}, {self.y}) [{self.w}x{self.h}]}}"
+
     def __repr__(self) -> str:
         return f"FRect({self.tuple()})"
 
@@ -91,6 +94,15 @@ class FRect:
             return FRect(self.x * other, self.y * other, self.w * other, self.h * other)
         else:
             return NotImplemented
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            isinstance(value, FRect) and
+            self.x == value.x and
+            self.y == value.y and
+            self.width == value.width and
+            self.height == value.height
+        )
 
     @property
     def x(self):
@@ -231,6 +243,9 @@ class Rect:
         self._h = h
         self._rect = pg.Rect(x, y, w, h)
 
+    def __str__(self) -> str:
+        return f"{{({self.x}, {self.y}) [{self.w}x{self.h}]}}"
+
     def __repr__(self) -> str:
         return f"Rect{self.tuple()}"
 
@@ -245,49 +260,60 @@ class Rect:
             return NotImplemented
         return Rect(self.x + other.x, self.y + other.y, self.w + other.w, self.h + other.h)
 
-    def __mul__(self, other: Rect | int):
+    def __mul__(self, other: Rect | int | float):
         if isinstance(other, Rect):
             return Rect(self.x * other.x, self.y * other.y, self.w * other.w, self.h * other.h)
         elif isinstance(other, int):
             return Rect(self.x * other, self.y * other, self.w * other, self.h * other)
+        elif isinstance(other, float):
+            return Rect(self.x * int(other), self.y * int(other), self.w * int(other), self.h * int(other))
         else:
             return NotImplemented
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            isinstance(value, Rect) and
+            self.x == value.x and
+            self.y == value.y and
+            self.width == value.width and
+            self.height == value.height
+        )
 
     @property
     def x(self):
         return self._x
 
     @x.setter
-    def x(self, new: int):
-        self._x = new
-        self._rect.x = new
+    def x(self, new: int | float):
+        self._x = int(new)
+        self._rect.x = int(new)
 
     @property
     def y(self):
         return self._y
 
     @y.setter
-    def y(self, new: int):
-        self._y = new
-        self._rect.y = new
+    def y(self, new: int | float):
+        self._y = int(new)
+        self._rect.y = int(new)
 
     @property
     def w(self):
         return self._w
 
     @w.setter
-    def w(self, new: int):
-        self._w = new
-        self._rect.w = new
+    def w(self, new: int | float):
+        self._w = int(new)
+        self._rect.w = int(new)
 
     @property
     def h(self):
         return self._h
 
     @h.setter
-    def h(self, new: int):
-        self._h = new
-        self._rect.h = new
+    def h(self, new: int | float):
+        self._h = int(new)
+        self._rect.h = int(new)
 
     left = x
     top = y
@@ -299,18 +325,18 @@ class Rect:
         return self._x + self._w
     
     @right.setter
-    def right(self, new: int):
-        self._x = new - self._w
-        self._rect.right = new
+    def right(self, new: int | float):
+        self._x = int(new) - self._w
+        self._rect.right = int(new)
 
     @property
     def bottom(self) -> int:
         return self._y + self._h
     
     @bottom.setter
-    def bottom(self, new: int):
-        self._y = new - self._h
-        self._rect.bottom = new
+    def bottom(self, new: int | float):
+        self._y = int(new) - self._h
+        self._rect.bottom = int(new)
 
     @property
     def topleft(self):

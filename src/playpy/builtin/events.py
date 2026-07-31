@@ -56,6 +56,9 @@ class Event(elements.Element):
         self.neg_func = negative_function
         self.once = once
 
+        self._own_handler_dirty: bool = False
+        self._full_handler_dirty: bool = False
+
         if global_event:
             GlobalElement().parent = self
 

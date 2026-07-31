@@ -47,7 +47,7 @@ Key methods:
 
 ```python
 ws.run()
-ws.quit()  # keep in mind that this method calls plp.quit()
+ws.quit()  # keep in mind that this method does not call plp.quit(); that should be manually called after this function
 ws.wait(seconds)
 
 ws.queue_scene_change(scene)
@@ -136,6 +136,37 @@ PlayPy assets load lazily: they store the path when created, then load the under
 `Animation`s store multiple `Sprite`s and allow for changing of animation settings (FPS, loop, etc.)
 Pass in either sprite paths (`Path` or `str` object), or `Sprite`s themselves.
 
+Useful methods/properties include...
+```python
+animation.looped # whether or not the animation loops
+animation.length # the length of the animation
+animation.elapsed # the current elapsed time in the animation
+animation.finished # whether or not the animation has finished (always false on looped animations)
+
+animation.play() # plays the animation at the current elapsed time
+animation.pause() # stops the animation at the current elapsed time
+animation.start() # plays the animation from the start
+animation.stop() # instantly ends the animation; start() must be used to restart a stopped animation.
+```
+
+### Integration Into Workspace
+
+For animations to update each frame, you must attach them to the workspace.
+
+Active animation helper methods/properties:
+```python
+ws.active_animations  # returns all active animations (cannot be overwritten)
+
+index = ws.add_animation(animation)  # adds a new animationn to the workspace and returns it
+
+animation = ws.remove_animation(index)  # removes an animation based on its index and returns it
+animation = ws.remove_animation(animation)  # removes an animation and returns it
+
+animation = ws.get_animation(index)  # gets an animation from its index
+
+cleared_animations = ws.clear_animations()  # clears all active animations and returns them
+```
+
 ### Sounds
 
 `Sound`s load and store user-imported sounds from sound files. Initialize them by passing in a path. (`Path` or `str` object)
@@ -180,7 +211,7 @@ tween.play() # plays the tween at the current elapsed time
 tween.pause() # stops the tween at the current elapsed time
 tween.start() # plays the tween from the start, remapping the start points of the tween to the current values
 tween.restart() # plays the tween from the start, reverting the current values of the tween to the start point
-tween.stop() # instantly ends the tween; start() must be used to restart a stopped tween.
+tween.stop() # instantly ends the tween; start() or restart() must be used to restart a stopped tween.
 ```
 
 ### Handling Tweened Values
@@ -208,7 +239,7 @@ tweened_value.set(value) # sets the current value of the TweenedValue
 
 ### Integration Into Workspace
 
-For the tween to update each frame, you must attach it to the workspace.
+Like animations, for tweens to update each frame, you must attach them to the workspace.
 
 Active tween helper methods/properties:
 ```python

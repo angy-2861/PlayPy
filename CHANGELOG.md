@@ -5,10 +5,24 @@
 ### Added
 
 - Added `FRect` functionality to multiply by `int`s.
+- Added caching on redrawing and recomputing certain effects, significantly increasing framerates.
+    - Now, all `Element`s store their last non-dirty `draw()` output and their last non-dirty full surface, children-and-all. Certain elements are only redrawn when their surfaces become dirty.
+- Added the ability to connect `Animation`s to the workspace. (`ws.active_animations`, `ws.add_animation()`, `ws.remove_animation()`, etc.)
+
+### Changed
+
+- Changed `Element` ancestory state to be cached instead of fetched on each access.
+- Changed some vital methods (e.g., `Renderer.draw_element`, `Element.parent.setter`, `Element._propagate_visual_change`, etc.) to fix them and make them more readable.
 
 ### Fixed
 
 - Fixed some outdated / misleading information in `README.md`
+- Fixed updating `Element.parent` not fully recursing through ancestors and descendants to update element tree state. (This does make setting `parent` slightly slower)
+
+### Removed
+
+- Removed `Element.remove_child()` and `Workspace.remove_child()` as they were redundant.
+    - Same thing with `del Component.parent` as it literally just does `Component.parent = None`.
 
 ## [0.5.0] - 20 June 2026
 
@@ -32,7 +46,7 @@
 
 - Made input and draw orders cached and only update when child z orders are updated.
 - Made `SurfaceHandler.extend()` only create a new union surface if `clip_within_self` is set to `True` **and** the other surface that it is being extended by is larger than the current surface.
-- Changed `ignores_environment` from a class attribute to an instance attribute, so that some effect (like image `VisualLayer`s and `Tooltip`s) can change this value without it affecting the whole class.
+- Changed `ignores_environment` from a class attribute to an instance attribute, so that some effects (like image `VisualLayer`s and `Tooltip`s) can change this value without it affecting the whole class.
 - Segmented `Workspace` processes for cleaner code and easier editing. (`Workspace` now contains `DisplayManager`, `InputManager`, and other classes that provide function for `Workspace` itself)
 - Made event helpers return the event function they took in so that the event function can be used outside of the actual event.
 - Allowed and defaulted `VisualLayer` to take in `blend_mode = None`.

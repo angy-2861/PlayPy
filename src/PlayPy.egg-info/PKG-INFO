@@ -3,6 +3,27 @@ Name: PlayPy
 Version: 0.5.0
 Summary: PlayPy is a lightweight Python library for creating games, tools, and interactive applications using a retained-mode UI and scene system built on top of pygame. It focuses on rapid prototyping, composable rendering, and simple but powerful layout primitives.
 Author-email: angel <angyv2861@gmail.com>
+License: MIT License
+        
+        Copyright (c) 2026 Angel Ventura
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
 Requires-Python: >=3.14
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
@@ -59,7 +80,7 @@ Key methods:
 
 ```python
 ws.run()
-ws.quit()  # keep in mind that this method does not call plp.quit()
+ws.quit()  # keep in mind that this method does not call plp.quit(); that should be manually called after this function
 ws.wait(seconds)
 
 ws.queue_scene_change(scene)
@@ -148,6 +169,37 @@ PlayPy assets load lazily: they store the path when created, then load the under
 `Animation`s store multiple `Sprite`s and allow for changing of animation settings (FPS, loop, etc.)
 Pass in either sprite paths (`Path` or `str` object), or `Sprite`s themselves.
 
+Useful methods/properties include...
+```python
+animation.looped # whether or not the animation loops
+animation.length # the length of the animation
+animation.elapsed # the current elapsed time in the animation
+animation.finished # whether or not the animation has finished (always false on looped animations)
+
+animation.play() # plays the animation at the current elapsed time
+animation.pause() # stops the animation at the current elapsed time
+animation.start() # plays the animation from the start
+animation.stop() # instantly ends the animation; start() must be used to restart a stopped animation.
+```
+
+### Integration Into Workspace
+
+For animations to update each frame, you must attach them to the workspace.
+
+Active animation helper methods/properties:
+```python
+ws.active_animations  # returns all active animations (cannot be overwritten)
+
+index = ws.add_animation(animation)  # adds a new animationn to the workspace and returns it
+
+animation = ws.remove_animation(index)  # removes an animation based on its index and returns it
+animation = ws.remove_animation(animation)  # removes an animation and returns it
+
+animation = ws.get_animation(index)  # gets an animation from its index
+
+cleared_animations = ws.clear_animations()  # clears all active animations and returns them
+```
+
 ### Sounds
 
 `Sound`s load and store user-imported sounds from sound files. Initialize them by passing in a path. (`Path` or `str` object)
@@ -192,7 +244,7 @@ tween.play() # plays the tween at the current elapsed time
 tween.pause() # stops the tween at the current elapsed time
 tween.start() # plays the tween from the start, remapping the start points of the tween to the current values
 tween.restart() # plays the tween from the start, reverting the current values of the tween to the start point
-tween.stop() # instantly ends the tween; start() must be used to restart a stopped tween.
+tween.stop() # instantly ends the tween; start() or restart() must be used to restart a stopped tween.
 ```
 
 ### Handling Tweened Values
@@ -220,7 +272,7 @@ tweened_value.set(value) # sets the current value of the TweenedValue
 
 ### Integration Into Workspace
 
-For the tween to update each frame, you must attach it to the workspace.
+Like animations, for tweens to update each frame, you must attach them to the workspace.
 
 Active tween helper methods/properties:
 ```python
@@ -378,7 +430,7 @@ component.parent = element
 Access input using:
 
 ```python
-ws.input
+ws.input_state
 ```
 
 Controller profile changes are tracked on the workspace for the current frame:
@@ -402,58 +454,58 @@ ws.stop_rumble_controller(profile)
 Properties:
 
 ```python
-ws.input.keys_pressed
-ws.input.key_downs
-ws.input.key_ups
+ws.input_state.keys_pressed
+ws.input_state.key_downs
+ws.input_state.key_ups
 
-ws.input.mouse_buttons_pressed
-ws.input.mouse_downs
-ws.input.mouse_ups
+ws.input_state.mouse_buttons_pressed
+ws.input_state.mouse_downs
+ws.input_state.mouse_ups
 
-ws.input.mouse_pos
-ws.input.mouse_delta
-ws.input.mouse_wheel
+ws.input_state.mouse_pos
+ws.input_state.mouse_delta
+ws.input_state.mouse_wheel
 
-ws.input.controller_buttons_pressed
-ws.input.controller_ups
-ws.input.controller_downs
+ws.input_state.controller_buttons_pressed
+ws.input_state.controller_ups
+ws.input_state.controller_downs
 
-ws.input.controller_left_sticks
-ws.input.controller_right_sticks
-ws.input.controller_left_sticks_deltas
-ws.input.controller_right_stick_deltas
+ws.input_state.controller_left_sticks
+ws.input_state.controller_right_sticks
+ws.input_state.controller_left_sticks_deltas
+ws.input_state.controller_right_stick_deltas
 
-ws.input.text_input
+ws.input_state.text_input
 
-ws.input.dt
-ws.input.running_fps
-ws.input.runtime
-ws.input.quit
+ws.input_state.dt
+ws.input_state.running_fps
+ws.input_state.runtime
+ws.input_state.quit
 ```
 
-Helper methods:
+Helper m_stateethods:
 
-```python
-ws.input.key_held()
-ws.input.key_down()
-ws.input.key_up()
+```pytho_staten
+ws.input_state.key_held()
+ws.input_state.key_down()
+ws.input_state.key_up()
 
-ws.input.mousebutton_held()
-ws.input.mousebutton_down()
-ws.input.mousebutton_up()
+ws.input_state.mousebutton_held()
+ws.input_state.mousebutton_down()
+ws.input_state.mousebutton_up()
 
-ws.input.controllerbutton_held()
-ws.input.controllerbutton_down()
-ws.input.controllerbutton_up()
+ws.input_state.controllerbutton_held()
+ws.input_state.controllerbutton_down()
+ws.input_state.controllerbutton_up()
 
-ws.input.left_stick(profile)
-ws.input.right_stick(profile)
-ws.input.left_stick_delta(profile)
-ws.input.right_stick_delta(profile)
+ws.input_state.left_stick(profile)
+ws.input_state.right_stick(profile)
+ws.input_state.left_stick_delta(profile)
+ws.input_state.right_stick_delta(profile)
 
-ws.input.input_action_held()
-ws.input.input_action_down()
-ws.input.input_action_up()
+ws.input_state.input_action_held()
+ws.input_state.input_action_down()
+ws.input_state.input_action_up()
 ```
 
 Use `InputAction`s for easier keybind compatibility. Any matching key, mouse button, or controller button can trigger the action.

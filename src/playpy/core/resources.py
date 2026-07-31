@@ -30,12 +30,15 @@ _init_message = (
 
 _initialized = False
 _debug = False
+_detailed_debug = False
 
-def enter_debug_mode():
-    global _debug
+def enter_debug_mode(detailed: bool = False):
+    global _debug, _detailed_debug
     if _initialized:
         log(Severity.ERROR, InitializationError, 'Please use "enter_debug_mode" before all other methods as it cannot be used after initialization.')
     _debug = True
+    if detailed:
+        _detailed_debug = True
 
 def init():
     global _initialized

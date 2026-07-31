@@ -10,7 +10,7 @@ from ..core import elements
 from ..core import workspace
 from ..core import resources
 
-from .components import Font, Scrollable
+from .components import Font, Scrollable, Padding
 
 
 __all__ = [
@@ -40,12 +40,13 @@ class Panel(elements.Element):
         self.color = color
         self._max_scroll_scale = max_scroll_scale
         self.max_scroll_offset = max_scroll_offset
-
+        
+        self._covering_children_dirty: bool = False
         self._covering_children: list[elements.Element] = []
 
-    def _propagate_order_change(self):
-        super()._propagate_order_change()
-        self._update_covering_children()
+    def _propagate_visual_change(self, order: bool = False, ancestors_handled: bool = False):
+        self._covering_children_dirty = True
+        super()._propagate_visual_change(order)
 
     def max_scroll_scale_x(self, workspace: workspace.Workspace) -> float:
         if self._max_scroll_scale is not None:
@@ -56,6 +57,7 @@ class Panel(elements.Element):
             return 0
         if self.children:
             right_children = max(key(child) for child in self.children)
+            if padding_comp := self.get_component(Padding): right_children += padding_comp.scale
             return max(0, right_children - 1)
         return 0
 
@@ -68,6 +70,7 @@ class Panel(elements.Element):
             return 0
         if self.children:
             bottom_children = max(key(child) for child in self.children)
+            if padding_comp := self.get_component(Padding): bottom_children += padding_comp.scale
             return max(0, bottom_children - 1)
         return 0
     
@@ -83,18 +86,22 @@ class Panel(elements.Element):
             queue.extend(current.children)
 
         self._covering_children = found_covering
+        self._covering_children_dirty = False
 
     def _hovered_and_no_covering(self, workspace: workspace.Workspace):
         return workspace.is_mouse_over(self) and not any(workspace.is_mouse_over(child) for child in self._covering_children)
 
     def handle_input(self, workspace: workspace.Workspace):
+        if self._covering_children_dirty:
+            self._update_covering_children()
         scroll_comp = self.get_component(Scrollable)
         if scroll_comp is None:
             return
         if self._hovered_and_no_covering(workspace):
             if workspace.input_state.mouse_wheel != 0:
                 max_offset = self.max_scroll_offset
-                panel_rect = self.get_rect_px(workspace)
+                if padding_comp := self.get_component(Padding): max_offset += padding_comp.offset
+                panel_rect = workspace.get_element_rect(self)
                 if workspace.input_state.key_down(state.Key.LSHIFT) or workspace.input_state.key_down(state.Key.RSHIFT):
                     max_scale = self.max_scroll_scale_x(workspace)
                     max_scroll = panel_rect.w * max_scale + max_offset
@@ -103,11 +110,12 @@ class Panel(elements.Element):
                     max_scale = self.max_scroll_scale_y(workspace)
                     max_scroll = panel_rect.h * max_scale + max_offset
                     scroll_comp.scroll_y(workspace.input_state.mouse_wheel, 0, round(max_scroll))
+                self._propagate_layout_change(updates_children=True)
 
     def draw(self, workspace: "workspace.Workspace", current_surface: state.SurfaceHandler | None) -> state.SurfaceHandler:
-        rect = self.get_rect_px(workspace)
+        rect = workspace.get_element_rect(self)
         surf = resources._make_surface(rect.size)
-        pg.draw.rect(surf, self.color, surf.get_rect())
+        surf.fill(self.color)
         return state.SurfaceHandler(surf, rect.topleft)
     
 class Line(elements.Element):
@@ -131,8 +139,12 @@ class Line(elements.Element):
     def handle_input(self, workspace: elements.Workspace) -> None:
         return
     
+    def updated_pos(self, workspace: elements.Workspace, current_surface: state.SurfaceHandler | None) -> tuple[int, int]:
+        rect = workspace.get_element_rect(self)
+        return (rect.x - self.width, rect.y - self.width)
+
     def draw(self, workspace: elements.Workspace, current_surface: state.SurfaceHandler | None) -> state.SurfaceHandler:
-        rect = self.get_rect_px(workspace)
+        rect = workspace.get_element_rect(self)
         size = (rect.w + self.width * 2, rect.h + self.width * 2)
         surf = resources._make_surface(size)
         pos = (rect.x - self.width, rect.y - self.width)
@@ -145,7 +157,7 @@ class Line(elements.Element):
 
 TextAlign = Literal[
     "topleft", "topright", "midtop",
-    "midleft", "center", "midright",
+    "midleft", "midright", "center",
     "bottomleft", "bottomright", "midbottom",
 ]
 
@@ -228,7 +240,7 @@ class Text(elements.Element):
         line_h = font.get_linesize()
         block_h = line_h * num_lines
 
-        rect = self.get_rect_px(workspace)
+        rect = workspace.get_element_rect(self)
 
         # Determine starting position based on alignment
         if "top" in self.align:
@@ -249,7 +261,7 @@ class Text(elements.Element):
     def _get_lines(self, workspace: workspace.Workspace) -> list[tuple[pg.Surface, pg.Rect]]:
         font, antialias = self._get_font()
 
-        rect = self.get_rect_px(workspace)
+        rect = workspace.get_element_rect(self)
         lines = _wrap_text_to_width(font, self.text, rect.w)
         line_h = font.get_linesize()
 
@@ -269,6 +281,12 @@ class Text(elements.Element):
 
             text_specs.append((surface, text_rect))
         return text_specs
+
+    def updated_pos(self, workspace: elements.Workspace, current_surface: state.SurfaceHandler | None) -> state.CoordinateValue | None:
+        text_specs = self._get_lines(workspace)
+        if not text_specs:
+            return
+        return text_specs[0][1].topleft
 
     def draw(self, workspace: workspace.Workspace, current_surface: state.SurfaceHandler | None) -> state.SurfaceHandler | None:
         text_specs = self._get_lines(workspace)
@@ -318,7 +336,6 @@ class Button(Panel):
             text=text,
             color=text_color,
             align="center",
-            enabled=False,
             z=1,
         )
         self._label.parent = self
@@ -363,13 +380,15 @@ class Button(Panel):
 
     def draw(self, workspace: workspace.Workspace, current_surface: state.SurfaceHandler | None) -> state.SurfaceHandler:
         self.color = self.idle_color
-        if self.is_mouse_over(workspace):
+        if workspace.is_mouse_over(self):
             self.color = self.hover_color
         if self._pressed:
             self.color = self.pressed_color
         return super().draw(workspace, current_surface)
 
     def handle_input(self, workspace: workspace.Workspace):
+        if self._covering_children_dirty:
+            self._update_covering_children()
         can_be_pressed = self._hovered_and_no_covering(workspace)
         if can_be_pressed and workspace.input_state.mousebutton_down(state.MouseButton.LEFT):
             self._pressed = True
@@ -483,7 +502,7 @@ class Textbox(Panel):
             font = self._value_label._get_font()[0]
             caret_h = font.get_ascent()
 
-            textbox_rect = self.get_rect_px(workspace)
+            textbox_rect = workspace.get_element_rect(self)
 
             self._caret.offset = state.Rect(
                 caret_x - textbox_rect.x,
@@ -511,6 +530,7 @@ class Textbox(Panel):
         return result
 
     def handle_input(self, workspace: workspace.Workspace):
+        super().handle_input(workspace)
         if workspace.input_state.mousebutton_down(state.MouseButton.LEFT):
             if self._hovered_and_no_covering(workspace):
                 self.focused = True
@@ -568,5 +588,6 @@ class Tooltip(Panel):
             or isinstance(self.parent, elements.Element) and workspace.is_mouse_top(self.parent)
             or self.visible and self._hovered_and_no_covering(workspace)
         )
+        self.enabled = self.visible
         if self.visible:
             super().handle_input(workspace)

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from contextlib import contextmanager
 
 from .input import InputManager
+from .display import DisplayManager
 from ..resources import InvalidValue, Severity, log
 
 if TYPE_CHECKING:
@@ -29,9 +30,10 @@ class SceneManager:
     previous_scene: "Scene | None"
     last_scene_change_time: float
 
-    def __init__(self, workspace: Workspace, input_manager: InputManager) -> None:
+    def __init__(self, workspace: Workspace, input_manager: InputManager, display_manager: DisplayManager) -> None:
         self.workspace = workspace
         self._input_manager = input_manager
+        self._display_manager = display_manager
 
         self.scene_stack: "list[Scene]" = []
         self.scene_changed = False
@@ -55,15 +57,15 @@ class SceneManager:
             self.last_scene_change_time = self._input_manager.state.runtime
 
     def _resolve_queued_scene_change(self):
-        if not self.scene_change_queue:
-            return
+        if not self.scene_change_queue: return
+        self._display_manager._draw_surface_dirty = True
         old_scene = self.current_scene
         while self.scene_stack:
             old = self.scene_stack.pop()
             try:
                 old.on_exit(self.workspace)
             finally:
-                self.workspace.remove_child(old)
+                old.parent = None
 
         final_scene: "Scene | None" = None
         while self.scene_change_queue:
@@ -72,7 +74,7 @@ class SceneManager:
                 try:
                     final_scene.on_exit(self.workspace)
                 finally:
-                    self.workspace.remove_child(final_scene)
+                    final_scene.parent = None
                 final_scene = None
 
             if scene is None:
@@ -87,6 +89,8 @@ class SceneManager:
         self._record_scene_change(old_scene, final_scene)
 
     def _resolve_queued_scene_push(self):
+        if not self.scene_push_queue: return
+        self._display_manager._draw_surface_dirty = True
         while self.scene_push_queue:
             scene, is_push = self.scene_push_queue.pop(0)
             if not is_push:
@@ -96,7 +100,7 @@ class SceneManager:
                 try:
                     popped.on_exit(self.workspace)
                 finally:
-                    self.workspace.remove_child(popped)
+                    popped.parent = None
                 current = self.current_scene
                 if current is not None:
                     current.on_resume(self.workspace)

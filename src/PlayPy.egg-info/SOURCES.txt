@@ -25,8 +25,8 @@ src/playpy/core/workspace/display.py
 src/playpy/core/workspace/element_hierarchy.py
 src/playpy/core/workspace/element_input.py
 src/playpy/core/workspace/input.py
+src/playpy/core/workspace/motion.py
 src/playpy/core/workspace/rendering.py
 src/playpy/core/workspace/scenes.py
-src/playpy/core/workspace/tween.py
 src/playpy/core/workspace/workspace.py
 src/playpy/data/default_icon.ppm

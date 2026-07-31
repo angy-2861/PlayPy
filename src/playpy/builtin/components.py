@@ -19,8 +19,28 @@ class Padding(elements.Component):
         offset: int = 10
     ) -> None:
         super().__init__()
-        self.scale = scale
-        self.offset = offset
+        self._scale = scale
+        self._offset = offset
+
+    @property
+    def scale(self):
+        return self._scale
+    
+    @scale.setter
+    def scale(self, value: float):
+        self._scale = value
+        if self._parent is not None:
+            self._parent._propagate_layout_change(updates_children=True)
+
+    @property
+    def offset(self):
+        return self._offset
+    
+    @offset.setter
+    def offset(self, value: int):
+        self._offset = value
+        if self._parent is not None:
+            self._parent._propagate_layout_change(updates_children=True)
 
 def _resolve_font_path(font_path: str | Path | None) -> str | None:
     if font_path is None:
@@ -39,16 +59,16 @@ class Font(elements.Component):
         self,
         font_path: str | Path | None = None,
         font_size: int | None = None,
-        bold: bool | None = None,
-        italic: bool | None = None,
-        antialias: bool | None = None,
+        bold: bool = False,
+        italic: bool = False,
+        antialias: bool = True,
     ):
         super().__init__()
         self._font_path = _resolve_font_path(font_path)
-        self.font_size = font_size
-        self.bold = bold
-        self.italic = italic
-        self.antialias = antialias
+        self._font_size = font_size
+        self._bold = bold
+        self._italic = italic
+        self._antialias = antialias
 
     @property
     def font_path(self):
@@ -57,6 +77,49 @@ class Font(elements.Component):
     @font_path.setter
     def font_path(self, value: str | Path | None):
         self._font_path = _resolve_font_path(value)
+        if self._parent is not None:
+            self._parent._propagate_layout_change()
+
+    @property
+    def font_size(self):
+        return self._font_size
+    
+    @font_size.setter
+    def font_size(self, value: int):
+        self._font_size = value
+        if self._parent is not None:
+            self._parent._propagate_layout_change(updates_children=True)
+
+    @property
+    def bold(self):
+        return self._bold
+    
+    @bold.setter
+    def bold(self, value: bool):
+        self._bold = value
+        if self._parent is not None:
+            self._parent._propagate_layout_change(updates_children=True)
+
+    @property
+    def italic(self):
+        return self._italic
+    
+    @italic.setter
+    def italic(self, value: bool):
+        self._italic = value
+        if self._parent is not None:
+            self._parent._propagate_layout_change(updates_children=True)
+
+    @property
+    def antialias(self):
+        return self._antialias
+    
+    @antialias.setter
+    def antialias(self, value: bool):
+        self._antialias = value
+        if self._parent is not None:
+            self._parent._propagate_layout_change(updates_children=True)
+
 
 class GlobalElement(elements.Component):
     def __init__(self):

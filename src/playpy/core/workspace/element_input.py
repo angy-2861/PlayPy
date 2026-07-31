@@ -93,7 +93,7 @@ class ElementInputManager:
     def _base_processing_order(self) -> "list[Element]":
         scene = self._scene_manager.current_scene
         if scene is not None:
-            self.input_order = self.generate_processing_order(scene) + self.generate_global_processing_order()
+            self.input_order = self.generate_global_processing_order() + self.generate_processing_order(scene)
         else:
             self.input_order = self.generate_processing_order()
         self.order_dirty = False

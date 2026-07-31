@@ -18,14 +18,15 @@ if TYPE_CHECKING:
 class ElementHierarchyManager:
     _forwarded = (
         'children',
+        'descendants',
         'add_child',
-        'remove_child',
         'is_ancestor_of',
         'is_parent_of',
         'get_element_rect'
     )
 
     children: list[Element]
+    descendants: list[Element]
 
     def __init__(self, workspace: Workspace, display_manager: DisplayManager, input_manager: InputManager) -> None:
         self.workspace = workspace
@@ -33,14 +34,13 @@ class ElementHierarchyManager:
         self.input_manager = input_manager
 
         self.children: list[Element] = []
+        self._descendant_tree: dict[Element, list[Element]] = {}
+        self.descendants: list[Element] = []
 
     def add_child(self, child: Element, z: int | None = None) -> None:
         if z is not None:
             child._z = z
         child.parent = self
-
-    def remove_child(self, child: Element) -> None:
-        child.parent = None
 
     def is_ancestor_of(self, descendant: Element) -> bool:
         return descendant.is_descendant_of(self)
@@ -48,18 +48,28 @@ class ElementHierarchyManager:
     def is_parent_of(self, child: Element) -> bool:
         return child._parent is self
 
+    def _reprocess_descendants(self):
+        self._descendants = []
+        for child, child_desc in self._descendant_tree.items():
+            self._descendants.append(child)
+            self._descendants.extend(child_desc)
+
     def _resort_children(self):
         self.children.sort(key=lambda child: child.z)
-        self._propagate_order_change()
+        self.display._draw_surface_dirty = True
 
-    def _propagate_order_change(self):
-        self.workspace._element_input_manager.order_dirty = True
+    def _propagate_visual_change(self, order: bool = False):
+        self.display._draw_surface_dirty = True
+        if order:
+            self.workspace._element_input_manager.order_dirty = True
 
     def _propagate_layout_change(
         self,
         parent: bool = True,
+        position: bool = False,
+        updates_children: bool = False
     ):
-        pass
+        self.display._draw_surface_dirty = True
 
     def _get_global_children(self) -> Generator[Element, None, None]:
         for child in self.children:

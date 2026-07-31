@@ -70,6 +70,7 @@ class DisplayManager:
         self.screen = pg.display.set_mode(self.size)
 
         self._draw_surface: SurfaceHandler = SurfaceHandler(_make_surface(self.size), (0, 0))
+        self._draw_surface_dirty: bool = True
 
         self._mouse_visible: bool = True
 

@@ -23,6 +23,7 @@ __all__ = [
     "BorderRadius",
     "GradientDirection",
     "Gradient",
+    "GradientValue",
     "ButtonGradient",
     "VisualLayer",
     "Event",

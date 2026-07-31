@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING, overload
 import pygame as pg
 
 from ..resources import require_init, log, quit, Severity, MissingAttribute
-from ..state import ColorValue, CoordinateValue, InputProfile, InputState, Tween, TweenedValue
+from ..state import ColorValue, CoordinateValue, InputProfile, InputState, Tween, Animation
 from .display import DisplayManager
 from .element_input import ElementInputManager
 from .element_hierarchy import ElementHierarchyManager
 from .input import InputManager
 from .rendering import Renderer
 from .scenes import SceneManager, SceneHandle
-from .tween import TweenManager
+from .motion import MotionManager
 
 
 def generate_forwards(cls: object, manager_attr: str, manager_cls: type):
@@ -59,7 +59,7 @@ if TYPE_CHECKING:
             icon: str | Path | None = None,
         ):
             self._display: DisplayManager
-            self._tween_manager: TweenManager
+            self._motion_manager: MotionManager
             self._input_manager: InputManager
             self._scene_manager: SceneManager
             self._element_input_manager: ElementInputManager
@@ -158,14 +158,15 @@ if TYPE_CHECKING:
         def queue_scene_pop(self, scene: "Scene | None" = None) -> None: ...
 
         @contextmanager
-        def scene_scope(self, scene: "Scene") -> "Iterator[tuple[Scene, SceneHandle]]": ...
+        def scene_scope(self, scene: "Scene") -> "Generator[tuple[Scene, SceneHandle], None, None]": ...
 
 
         @property
         def children(self) -> "list[Element]": ...
+        @property
+        def descendants(self) -> "list[Element]": ...
 
         def add_child(self, child: "Element", z: int | None = None) -> None: ...
-        def remove_child(self, child: "Element") -> None: ...
         def is_ancestor_of(self, descendant: "Element") -> bool: ...
         def is_parent_of(self, child: "Element") -> bool: ...
         def get_element_rect(self, element: "Element") -> pg.Rect: ...
@@ -194,6 +195,21 @@ if TYPE_CHECKING:
 
         def clear_tweens(self) -> list[Tween]: ...
 
+        @property
+        def active_animations(self) -> list[Animation]: ...
+
+        def add_animation(self, animation: Animation, /) -> int: ...
+
+        @overload
+        def remove_animation(self, animation_index: int, /) -> Animation: ...
+        @overload
+        def remove_animation(self, animation: Animation, /) -> Animation: ...
+        def remove_animation(self, *args) -> Animation: ...
+
+        def get_animation(self, tween_index: int) -> Animation: ...
+
+        def clear_animations(self) -> list[Animation]: ...
+
 
         def step(self): ...
         def run(self): ...
@@ -215,9 +231,9 @@ else:
             require_init()
 
             self._display = DisplayManager(self, windowed_size, color, name, icon)
-            self._tween_manager = TweenManager(self)
+            self._motion_manager = MotionManager(self)
             self._input_manager = InputManager(self)
-            self._scene_manager = SceneManager(self, self._input_manager)
+            self._scene_manager = SceneManager(self, self._input_manager, self._display)
             self._element_hierarchy_manager = ElementHierarchyManager(self, self._display, self._input_manager)
             self._element_input_manager = ElementInputManager(self, self._input_manager, self._scene_manager, self._element_hierarchy_manager)
             self._renderer = Renderer(self, self._display, self._scene_manager, self._element_hierarchy_manager)
@@ -229,7 +245,6 @@ else:
 
         def step(self):
             self._stepping = True
-            self._display.fill()
 
             try:
                 self._scene_manager._resolve_queued_scene_change()
@@ -245,7 +260,6 @@ else:
             self.running = True
             while self.running:
                 self.step()
-            quit()
 
         def wait(self, seconds: float) -> float:
             if self._stepping or not self.running:
@@ -259,23 +273,23 @@ else:
             return (pg.time.get_ticks() - start_time) / 1000
 
         def quit(self):
-            if not self.running:
-                quit()
-            else:
-                self.running = False
+            self.running = False
 
         def _finish_frame(self):
             self._display.flip()
             dt = self._tick()
             self._input_manager.next_frame(dt)
-            self._tween_manager.next_frame(dt)
+            self._motion_manager.next_frame(dt)
             self._scene_manager.scene_changed = False
 
         def _tick(self) -> float:
             return self.clock.tick(self.fps) / 1000
 
+        def __repr__(self) -> str:
+            return f"{type(self).__name__}(windowed_size={self.windowed_size},color={self.color},fps={self.fps})"
+
     generate_forwards(Workspace, "_display", DisplayManager)
-    generate_forwards(Workspace, "_tween_manager", TweenManager)
+    generate_forwards(Workspace, "_motion_manager", MotionManager)
     generate_forwards(Workspace, "_input_manager", InputManager)
     generate_forwards(Workspace, "_scene_manager", SceneManager)
     generate_forwards(Workspace, "_element_hierarchy_manager", ElementHierarchyManager)
