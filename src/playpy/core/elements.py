@@ -275,7 +275,9 @@ class Element(ABC):
         # dirty handler if not a child or if this propagation updates children
         if not child or position or updates_children:
             self._full_handler_dirty = True
-            if not parent: self._propagate_visual_change(ancestors_handled=child)
+
+            # dirty myself if I am the base element or this propagation updates children and I am a child
+            if not parent: self._propagate_visual_change(ancestors_handled=True)
 
         # only propagate up if not a child
         if child: return

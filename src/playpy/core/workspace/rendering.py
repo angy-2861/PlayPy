@@ -55,6 +55,9 @@ class Renderer:
             if element._own_handler_dirty:
                 if resources._detailed_debug: print(f"{clr.Fore.MAGENTA}{clr.Style.DIM}{datetime.now().strftime("[%d %b %Y - %H:%M:%S]")} - {'>' * DEBUG_DEPTH} element {element}'s own handler is dirty{clr.Style.RESET_ALL}")
                 element._own_handler = element.draw(self.workspace, parent_handler)
+                if element._own_handler is not None:
+                    element._full_handler.special_flags = element._own_handler.special_flags
+                    element._own_handler.special_flags = 0
                 element._own_handler_dirty = False
 
             # position dirty check
@@ -67,7 +70,6 @@ class Renderer:
 
             # extend the full handler with the own handler if it is present
             if element._own_handler is not None:
-                element._full_handler.special_flags = element._own_handler.special_flags
                 element._full_handler.extend(element._own_handler)
                 if resources._detailed_debug: print(f"{clr.Fore.CYAN}{datetime.now().strftime("[%d %b %Y - %H:%M:%S]")} - {'>' * DEBUG_DEPTH} extended full handler with own handler for element {element}{clr.Style.RESET_ALL}")
 

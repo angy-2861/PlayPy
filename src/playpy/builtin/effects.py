@@ -38,13 +38,22 @@ class Effect(elements.Element):
 
     def handle_input(self, workspace: elements.Workspace) -> None:
         return
+
+    def _propagate_layout_change(
+        self,
+        parent: bool = False,
+        child: bool = False,
+        position: bool = False,
+        updates_children: bool = False
+    ):
+        super()._propagate_layout_change()
+        if self._full_handler_dirty:
+            self._own_handler_dirty = True
     
 def color_change_isnoalpha(val1: state.ColorValue, val2: state.ColorValue):
-    return (
-        len(val1) == len(val2) or
-        len(val1) == 4 and val1[3] == 255 or
-        len(val2) == 4 and val2[3] == 255
-    )
+    if len(val1) == 3: val1 = (*val1, 255)
+    if len(val2) == 3: val2 = (*val2, 255)
+    return val1[3] == val2[3]
 
 OutlineEdgeType = Literal["inset", "middle", "outset"]
 OutlineCornerType = Literal["square", "rounded", "pointed"]
@@ -136,6 +145,10 @@ class Outline(Effect):
         else:
             return (X ** 2 + Y ** 2) <= (radius ** 2)
 
+    def _expand_outline_to_brush(self, outline: np.ndarray, radius: int) -> np.ndarray:
+        brush = self._create_brush(radius)
+        return binary_dilation(outline, brush).astype(bool)
+
     def _create_outline(self, current_surface: state.SurfaceHandler, pad: int = 0) -> np.ndarray:
         occupied = pg.surfarray.pixels_alpha(current_surface.surface) > 0
         occupied = np.pad(occupied, pad)
@@ -152,9 +165,8 @@ class Outline(Effect):
         outline_source = occupied & touches_empty
 
         radius = self.width // 2 if self.edge_type == "middle" else self.width
-        brush = self._create_brush(radius)
 
-        outline = binary_dilation(outline_source, brush).astype(bool)
+        outline = self._expand_outline_to_brush(outline_source, radius)
 
         if self.edge_type == "middle":
             return outline
